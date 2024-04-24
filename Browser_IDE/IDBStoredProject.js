@@ -35,7 +35,7 @@ class FSNodeConflictError extends Error {
 }
 
 /**
- * The requested FS operation is not valid for this node type.
+ * The requested filesystem operation is not valid for this node type.
  */
 class FSInvalidNodeOperation extends Error {
 	constructor(nodePath, nodeType, nodeOperation){
