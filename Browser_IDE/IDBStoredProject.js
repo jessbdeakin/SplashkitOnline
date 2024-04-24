@@ -1,5 +1,51 @@
 "use strict";
 
+/**
+ * Unable to find a node specified by a path.
+*/
+class FSNodeNotFoundError extends Error {
+    constructor(nodePath){
+        super("The node '" + nodePath + "' could not be found.");
+		this.name = "FSNodeNotFoundError"
+		this.nodePath = nodePath;
+    }
+}
+
+/**
+ * Unable to find the parent directory specified by a path.
+ */
+class FSParentDirectoryNotFoundError extends FSNodeNotFoundError {
+    constructor(parentDirectoryPath){
+        super(parentDirectoryPath);
+		this.message = "The parent directory '" + parentDirectoryPath + "' could not be found.";
+		this.name = "FSParentDirectoryNotFoundError"
+		this.parentDirectoryPath = parentDirectoryPath;
+    }
+}
+
+/**
+ * A node with the requested path already existed.
+ */
+class FSNodeConflictError extends Error {
+	constructor(conflictPath){
+        super("The path '" + conflictPath + "' already points to a node.");
+		this.name = "FSNodeConflictError"
+		this.conflictPath = conflictPath;
+    }
+}
+
+/**
+ * The requested FS operation is not valid for this node type.
+ */
+class FSInvalidNodeOperation extends Error {
+	constructor(nodePath, nodeType, nodeOperation){
+		super("Invalid " + nodeOperation + " operation on " + nodeType + " node: '" + nodePath + "'");
+		this.name = "FSInvalidNodeOperation";
+		this.nodePath = nodePath;
+		this.nodeType = nodeType;
+		this.nodeOperation = nodeOperation;
+	}
+}
 
 class IDBStoredProject extends EventTarget{
     constructor(initializer) {
