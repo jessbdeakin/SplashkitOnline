@@ -12,7 +12,7 @@ class FSNodeNotFoundError extends Error {
 }
 
 /**
- * Unable to find the parent directory specified by a path.
+ * Unable to find the parent directory specified in a path.
  */
 class FSParentDirectoryNotFoundError extends FSNodeNotFoundError {
     constructor(parentDirectoryPath){
@@ -24,11 +24,11 @@ class FSParentDirectoryNotFoundError extends FSNodeNotFoundError {
 }
 
 /**
- * A node with the requested path already existed.
+ * A node with the pertinent path already exists.
  */
 class FSNodeConflictError extends Error {
     constructor(conflictPath){
-        super("The path '" + conflictPath + "' already points to a node.");
+        super("A node at the path '" + conflictPath + "' already exists.");
         this.name = "FSNodeConflictError"
         this.conflictPath = conflictPath;
     }
@@ -36,6 +36,7 @@ class FSNodeConflictError extends Error {
 
 /**
  * The requested filesystem operation is not valid for this node type.
+ * e.g. reading a directory.
  */
 class FSInvalidNodeOperation extends Error {
     constructor(nodePath, nodeType, nodeOperation){
