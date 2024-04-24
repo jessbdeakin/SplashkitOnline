@@ -197,38 +197,47 @@ class __IDBStoredProjectRW{
     async mkdir(path){
         let IDBSP = this;
         let dirName = this.pathFileName(path);
+        let parentDirPath = IDBSP.pathDirName(path);
         await this.doTransaction("files", "readwrite", async function(t, files){
-            let parentNode = await IDBSP.getNodeFromPath(t, files, IDBSP.pathDirName(path));
-            if (parentNode != null && await IDBSP.getChildNodeWithName(t, files, parentNode, dirName) == null){
-                await IDBSP.makeNode(t, files, dirName, "DIR", null, parentNode);
-                let ev = new Event("onMakeDirectory");
-                ev.path = path;
-                IDBSP.owner.dispatchEvent(ev);
-            }
+            let parentNode = await IDBSP.getNodeFromPath(t, files, parentDirPath);
+            
+            if (parent == null)
+                throw new FSParentDirectoryNotFoundError(parentDirPath);
+
+            if (await IDBSP.getChildNodeWithName(t, files, parentNode, dirName) != null)
+                throw new FSNodeConflictError(path);
+            
+            await IDBSP.makeNode(t, files, dirName, "DIR", null, parentNode);
+            let ev = new Event("onMakeDirectory");
+            ev.path = path;
+            IDBSP.owner.dispatchEvent(ev);
         });
     }
 
     async writeFile(path, data){
         let IDBSP = this;
         let fileName = this.pathFileName(path);
+        let parentDirPath = IDBSP.pathDirName(path);
         await this.doTransaction("files", "readwrite", async function(t, files){
-            let parentNode = await IDBSP.getNodeFromPath(t, files, IDBSP.pathDirName(path));
-            if (parentNode != null){
-                let node = await IDBSP.getChildNodeWithName(t, files, parentNode, fileName);
-                if (node == null){
-                    await IDBSP.makeNode(t, files, fileName, "FILE", data, parentNode);
-                }
-                else{
-                    let nodeInt = await IDBSP.getNode(t, files, node);
-                    await IDBSP.replaceNode(t, files, nodeInt.nodeId, nodeInt.name, nodeInt.type, data, nodeInt.parent);
-                }
-                let ev = new Event("onOpenFile");
-                ev.path = path;
-                IDBSP.owner.dispatchEvent(ev);
-                ev = new Event("onWriteToFile");
-                ev.path = path;
-                IDBSP.owner.dispatchEvent(ev);
+            let parentNode = await IDBSP.getNodeFromPath(t, files, parentDirPath);
+            
+            if (parentNode == null)
+                throw new FSParentDirectoryNotFoundError(parentDirPath);
+            
+            let node = await IDBSP.getChildNodeWithName(t, files, parentNode, fileName);
+            if (node == null){
+                await IDBSP.makeNode(t, files, fileName, "FILE", data, parentNode);
             }
+            else{
+                let nodeInt = await IDBSP.getNode(t, files, node);
+                await IDBSP.replaceNode(t, files, nodeInt.nodeId, nodeInt.name, nodeInt.type, data, nodeInt.parent);
+            }
+            let ev = new Event("onOpenFile");
+            ev.path = path;
+            IDBSP.owner.dispatchEvent(ev);
+            ev = new Event("onWriteToFile");
+            ev.path = path;
+            IDBSP.owner.dispatchEvent(ev);
         });
     }
 
@@ -239,20 +248,27 @@ class __IDBStoredProjectRW{
         let newPath_name = this.pathFileName(newPath);
         await this.doTransaction("files", "readwrite", async function(t, files){
             let node = await IDBSP.getNodeFromPath(t, files, oldPath);
-            if (node != null){
-                let nodeInt = await IDBSP.getNode(t, files, node);
-                if (oldPath_dir != newPath_dir){
-                    let newPath_Node = await IDBSP.getNodeFromPath(t, files, newPath_dir);
-                    if (newPath_Node == null)
-                        return;
-                    nodeInt.parent = newPath_Node;
-                }
-                await IDBSP.replaceNode(t, files, nodeInt.nodeId, newPath_name, nodeInt.type, nodeInt.data, nodeInt.parent);
-                let ev = new Event("onMovePath");
-                ev.oldPath = oldPath;
-                ev.newPath = newPath;
-                IDBSP.owner.dispatchEvent(ev);
+            
+            if (node == null)
+                throw new FSNodeNotFoundError(oldPath);
+            
+            let nodeInt = await IDBSP.getNode(t, files, node);
+            if (oldPath_dir != newPath_dir){
+                let newPath_Node = await IDBSP.getNodeFromPath(t, files, newPath_dir);
+                if (newPath_Node == null)
+                    throw new FSParentDirectoryNotFoundError(newPath_dir);
+                nodeInt.parent = newPath_Node;
             }
+
+            let tenantNode = await IDBSP.getNodeFromPath(t, files, newPath);
+            if (tenantNode != null)
+                throw new FSNodeConflictError(newPath);
+
+            await IDBSP.replaceNode(t, files, nodeInt.nodeId, newPath_name, nodeInt.type, nodeInt.data, nodeInt.parent);
+            let ev = new Event("onMovePath");
+            ev.oldPath = oldPath;
+            ev.newPath = newPath;
+            IDBSP.owner.dispatchEvent(ev);
         });
     }
 
@@ -260,9 +276,10 @@ class __IDBStoredProjectRW{
         let IDBSP = this;
         return this.doTransaction("files", "readonly", async function(t, files){
             let node = await IDBSP.getNodeFromPath(t, files, path);
-            if (node != null)
-                return (await IDBSP.getNode(t, files, node)).data;
-            return null;
+            if (node == null)
+                throw new FSNodeNotFoundError(path);    
+
+            return (await IDBSP.getNode(t, files, node)).data;
         });
     }
 
@@ -271,7 +288,7 @@ class __IDBStoredProjectRW{
         await this.doTransaction("files", "readwrite", async function(t, files){
             let nodeId = await IDBSP.getNodeFromPath(t, files, path);
             if (nodeId == null)
-                return;
+                throw new FSNodeNotFoundError(path);
 
             await IDBSP.deleteNode(t, files, nodeId);
             
@@ -312,7 +329,13 @@ class __IDBStoredProjectRW{
 
             let nodeId = await IDBSP.getNodeFromPath(t, files, path);
             if (nodeId == null)
-                return;
+                throw new FSNodeNotFoundError(path);
+
+            let node = await IDBSP.getNode(t, files, nodeId);
+            if (node == null)
+                throw new FSNodeNotFoundError(path);
+            if (node.type != "DIR")
+                throw new FSInvalidNodeOperation(path, "DIR", "rmdir");
 
             if(recursive){
                 deleteRecursive(t, files, nodeId, path);
