@@ -6,8 +6,8 @@
 class FSNodeNotFoundError extends Error {
     constructor(nodePath){
         super("The node '" + nodePath + "' could not be found.");
-		this.name = "FSNodeNotFoundError"
-		this.nodePath = nodePath;
+        this.name = "FSNodeNotFoundError"
+        this.nodePath = nodePath;
     }
 }
 
@@ -17,9 +17,9 @@ class FSNodeNotFoundError extends Error {
 class FSParentDirectoryNotFoundError extends FSNodeNotFoundError {
     constructor(parentDirectoryPath){
         super(parentDirectoryPath);
-		this.message = "The parent directory '" + parentDirectoryPath + "' could not be found.";
-		this.name = "FSParentDirectoryNotFoundError"
-		this.parentDirectoryPath = parentDirectoryPath;
+        this.message = "The parent directory '" + parentDirectoryPath + "' could not be found.";
+        this.name = "FSParentDirectoryNotFoundError"
+        this.parentDirectoryPath = parentDirectoryPath;
     }
 }
 
@@ -27,10 +27,10 @@ class FSParentDirectoryNotFoundError extends FSNodeNotFoundError {
  * A node with the requested path already existed.
  */
 class FSNodeConflictError extends Error {
-	constructor(conflictPath){
+    constructor(conflictPath){
         super("The path '" + conflictPath + "' already points to a node.");
-		this.name = "FSNodeConflictError"
-		this.conflictPath = conflictPath;
+        this.name = "FSNodeConflictError"
+        this.conflictPath = conflictPath;
     }
 }
 
@@ -38,13 +38,13 @@ class FSNodeConflictError extends Error {
  * The requested filesystem operation is not valid for this node type.
  */
 class FSInvalidNodeOperation extends Error {
-	constructor(nodePath, nodeType, nodeOperation){
-		super("Invalid " + nodeOperation + " operation on " + nodeType + " node: '" + nodePath + "'");
-		this.name = "FSInvalidNodeOperation";
-		this.nodePath = nodePath;
-		this.nodeType = nodeType;
-		this.nodeOperation = nodeOperation;
-	}
+    constructor(nodePath, nodeType, nodeOperation){
+        super("Invalid " + nodeOperation + " operation on " + nodeType + " node: '" + nodePath + "'");
+        this.name = "FSInvalidNodeOperation";
+        this.nodePath = nodePath;
+        this.nodeType = nodeType;
+        this.nodeOperation = nodeOperation;
+    }
 }
 
 class IDBStoredProject extends EventTarget{
